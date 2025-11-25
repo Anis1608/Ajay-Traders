@@ -1,11 +1,12 @@
+
 import express from 'express';
-import { adminLogin, registerAdmin } from '../Controller/adminAuthController.js';
-// import {authMiddleware} from '../middleware/authMiddleware.js';
+import { adminLogin, registerAdmin, changePassword } from '../Controller/adminAuthController.js';
 
 const adminAuth = express.Router();
 
 adminAuth.post('/register', registerAdmin);
 adminAuth.post('/login' , adminLogin);
+adminAuth.post('/change-password', changePassword);
 
 
 export default adminAuth;
