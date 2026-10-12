@@ -144,12 +144,28 @@ pipeline {
                             VALID_AUTH=\$(printf "%s:%s" "${env.NEXUS_USER}" "${env.NEXUS_PASS}" | base64 | tr -d '\\r\\n')
                         fi
 
-                        CONFIG_JSON="{\"auths\":{\"${env.NEXUS_REGISTRY}\":{\"auth\":\"\$VALID_AUTH\"},\"https://${env.NEXUS_REGISTRY}\":{\"auth\":\"\$VALID_AUTH\"}}}"
-                        for DIR in "\$HOME/.docker" "/home/user/.docker" "/home/jenkins/agent/.docker" "/root/.docker"; do
+                        for DIR in "\$HOME/.docker" "/home/user/.docker" "/home/jenkins/agent/.docker"; do
                             mkdir -p "\$DIR" 2>/dev/null || true
-                            echo "\$CONFIG_JSON" > "\$DIR/config.json" 2>/dev/null || true
+                            cat <<EOF > "\$DIR/config.json"
+{
+  "auths": {
+    "${env.NEXUS_REGISTRY}": {
+      "auth": "\$VALID_AUTH"
+    },
+    "https://${env.NEXUS_REGISTRY}": {
+      "auth": "\$VALID_AUTH"
+    },
+    "${env.NEXUS_REGISTRY}/${env.NEXUS_REPO_PATH}": {
+      "auth": "\$VALID_AUTH"
+    }
+  }
+}
+EOF
+                            chmod 600 "\$DIR/config.json" 2>/dev/null || true
                         done
-                        export DOCKER_CONFIG="\$HOME/.docker"
+                        export DOCKER_CONFIG="/home/user/.docker"
+                        echo "Generated docker config:"
+                        cat /home/user/.docker/config.json
 
                         BUILDKIT_SOCK="unix:///run/user/1000/buildkit/buildkitd.sock"
 
@@ -226,8 +242,12 @@ pipeline {
 
                         if ! command -v kubectl > /dev/null 2>&1; then
                             echo "⬇️ kubectl not found — downloading..."
-                            curl -sLO "https://dl.k8s.io/release/v1.30.0/bin/linux/amd64/kubectl"
-                            chmod +x kubectl
+                            if command -v curl > /dev/null 2>&1; then
+                                curl -sLO "https://dl.k8s.io/release/v1.30.0/bin/linux/amd64/kubectl"
+                            elif command -v wget > /dev/null 2>&1; then
+                                wget -q "https://dl.k8s.io/release/v1.30.0/bin/linux/amd64/kubectl"
+                            fi
+                            chmod +x ./kubectl || true
                             export PATH=".:\$PATH"
                         fi
 
@@ -252,6 +272,13 @@ pipeline {
                     sh """
                         export KUBECONFIG=\${KUBECONFIG_FILE}
                         export PATH=".:\$PATH"
+
+                        if ! command -v kubectl > /dev/null 2>&1; then
+                            if [ -f ./kubectl ]; then
+                                chmod +x ./kubectl
+                                export PATH=".:\$PATH"
+                            fi
+                        fi
 
                         kubectl rollout status deployment/backend-deployment  -n ${env.K8S_NAMESPACE} --timeout=120s || true
                         kubectl rollout status deployment/frontend-deployment -n ${env.K8S_NAMESPACE} --timeout=120s || true
