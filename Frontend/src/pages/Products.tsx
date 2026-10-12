@@ -14,7 +14,7 @@ import { motion } from "framer-motion";
 import { useEffect, useState, useRef } from "react";
 import axios from "axios";
 
-const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || '';
 
 interface Product {
   _id: string;

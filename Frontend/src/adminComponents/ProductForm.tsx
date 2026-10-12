@@ -42,7 +42,7 @@ const ProductForm = ({ product, brand, onSubmit, onClose }: ProductFormProps) =>
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
 
-  const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
+  const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || '';
 
   useEffect(() => {
     if (product) {

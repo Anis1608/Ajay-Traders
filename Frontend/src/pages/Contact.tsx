@@ -9,6 +9,7 @@ import { useState } from 'react';
 import Footer from '@/components/Footer';
 
 const Contact = () => {
+  const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || '';
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -26,7 +27,7 @@ const Contact = () => {
     setError('');
 
     try {
-      const response = await fetch('http://localhost:5000/api/contact', {
+      const response = await fetch(`${API_BASE_URL}/api/contact`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -10,6 +10,8 @@ coverage/
 build/
 dist/
 
+
+student-starter-kit-devops
 # Misc
 .DS_Store
 .env

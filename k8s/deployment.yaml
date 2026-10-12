@@ -1,0 +1,156 @@
+# =============================================================================
+# Ajay Traders - Fullstack Multi-Tier Kubernetes Manifests
+# Tier 1: Backend API (Deployment + Service)
+# Tier 2: Frontend UI  (Deployment + Service)
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# 1. BACKEND API DEPLOYMENT
+# -----------------------------------------------------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-deployment
+  namespace: student-24010988a
+  labels:
+    app: ajay-traders
+    tier: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ajay-traders
+      tier: backend
+  template:
+    metadata:
+      labels:
+        app: ajay-traders
+        tier: backend
+    spec:
+      containers:
+        - name: backend
+          image: nexus.imcc.skilli.in/student-docker/24010988a/backend:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5000
+              name: http
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: PORT
+              value: "5000"
+            - name: MONGO_URI
+              value: "mongodb+srv://aniskhan20171_db_user:aniskhan1608@cluster0.xlsqtzk.mongodb.net/?appName=Cluster0"
+            - name: JWT_SECRET
+              value: "Developed by Anis khan"
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 15
+            periodSeconds: 20
+---
+# -----------------------------------------------------------------------------
+# 2. BACKEND CLUSTERIP SERVICE (Internal DNS: http://backend-service:5000)
+# -----------------------------------------------------------------------------
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+  namespace: student-24010988a
+  labels:
+    app: ajay-traders
+    tier: backend
+spec:
+  type: ClusterIP
+  selector:
+    app: ajay-traders
+    tier: backend
+  ports:
+    - name: http
+      port: 5000
+      targetPort: 5000
+---
+# -----------------------------------------------------------------------------
+# 3. FRONTEND UI DEPLOYMENT
+# -----------------------------------------------------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-deployment
+  namespace: student-24010988a
+  labels:
+    app: ajay-traders
+    tier: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ajay-traders
+      tier: frontend
+  template:
+    metadata:
+      labels:
+        app: ajay-traders
+        tier: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: nexus.imcc.skilli.in/student-docker/24010988a/frontend:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+              name: http
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 20
+---
+# -----------------------------------------------------------------------------
+# 4. FRONTEND CLUSTERIP SERVICE
+# -----------------------------------------------------------------------------
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+  namespace: student-24010988a
+  labels:
+    app: ajay-traders
+    tier: frontend
+spec:
+  type: ClusterIP
+  selector:
+    app: ajay-traders
+    tier: frontend
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80

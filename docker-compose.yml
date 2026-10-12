@@ -1,0 +1,42 @@
+# =============================================================================
+# Ajay Traders - Fullstack Local Development (Docker Compose)
+# Test Frontend + Backend locally: docker compose up --build
+# =============================================================================
+
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./Backend
+      dockerfile: Dockerfile
+    container_name: ajay-traders-backend
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - NODE_ENV=development
+      - PORT=5000
+      - MONGO_URI=mongodb+srv://aniskhan20171_db_user:aniskhan1608@cluster0.xlsqtzk.mongodb.net/?appName=Cluster0
+      - JWT_SECRET=Developed by Anis khan
+    networks:
+      - ajay-traders-network
+
+  frontend:
+    build:
+      context: ./Frontend
+      dockerfile: Dockerfile
+      args:
+        - VITE_BACKEND_URL=http://localhost:5000
+    container_name: ajay-traders-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    networks:
+      - ajay-traders-network
+    depends_on:
+      - backend
+
+networks:
+  ajay-traders-network:
+    driver: bridge

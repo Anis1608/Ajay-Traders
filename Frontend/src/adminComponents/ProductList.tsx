@@ -52,7 +52,7 @@ const ProductList = ({ brand, onEdit, onCountUpdate }: ProductListProps) => {
   const [productToDelete, setProductToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
+  const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || '';
 
   const fetchProducts = async () => {
     try {
