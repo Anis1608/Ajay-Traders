@@ -238,8 +238,6 @@ EOF
                 echo "☸️ Applying fullstack manifests to namespace ${env.K8S_NAMESPACE}..."
                 withCredentials([file(credentialsId: env.KUBE_CRED_ID, variable: 'KUBECONFIG_FILE')]) {
                     sh """
-                        export KUBECONFIG=\${KUBECONFIG_FILE}
-
                         if ! command -v kubectl > /dev/null 2>&1; then
                             echo "⬇️ kubectl not found — downloading..."
                             if command -v curl > /dev/null 2>&1; then
@@ -251,12 +249,40 @@ EOF
                             export PATH=".:\$PATH"
                         fi
 
+                        # Setup isolated writable kubeconfig
+                        cp "\${KUBECONFIG_FILE}" ./kubeconfig
+                        chmod 600 ./kubeconfig
+                        export KUBECONFIG="\$(pwd)/kubeconfig"
+
+                        # When running inside Kubernetes cluster, vccl-k8s.college.internal may not be in CoreDNS.
+                        # Fallback to standard in-cluster API server (kubernetes.default.svc:443 / KUBERNETES_SERVICE_HOST)
+                        K8S_INTERNAL_SERVER="https://\${KUBERNETES_SERVICE_HOST:-kubernetes.default.svc}:\${KUBERNETES_SERVICE_PORT:-443}"
+                        echo "In-cluster API server endpoint: \$K8S_INTERNAL_SERVER"
+
+                        if ! getent hosts vccl-k8s.college.internal > /dev/null 2>&1; then
+                            echo "⚠️ vccl-k8s.college.internal not resolvable by pod DNS. Updating kubeconfig to internal API..."
+                            CURRENT_CLUSTER=\$(kubectl config view -o jsonpath='{.clusters[0].name}' 2>/dev/null || echo "")
+                            if [ -n "\$CURRENT_CLUSTER" ]; then
+                                kubectl config set-cluster "\$CURRENT_CLUSTER" --server="\${K8S_INTERNAL_SERVER}" --insecure-skip-tls-verify=true --kubeconfig=./kubeconfig || true
+                            fi
+                            sed -i -E "s|([[:space:]]*server: )https://[^[:space:]]+|\1\${K8S_INTERNAL_SERVER}|g" ./kubeconfig || true
+                            sed -i -E "s|[[:space:]]*certificate-authority[-a-z]*:.*|    insecure-skip-tls-verify: true|g" ./kubeconfig || true
+                        fi
+
+                        echo "Creating / ensuring Nexus image pull secret in namespace ${env.K8S_NAMESPACE}..."
+                        kubectl create secret docker-registry nexus-docker-secret \\
+                            --docker-server="${env.NEXUS_REGISTRY}" \\
+                            --docker-username="${env.NEXUS_USER}" \\
+                            --docker-password="${env.NEXUS_PASS}" \\
+                            -n "${env.K8S_NAMESPACE}" \\
+                            --dry-run=client -o yaml | kubectl apply -f - --validate=false --insecure-skip-tls-verify=true || true
+
                         echo "Applying Kubernetes manifests from k8s/..."
-                        kubectl apply -f k8s/ -n ${env.K8S_NAMESPACE}
+                        kubectl apply -f k8s/ -n "${env.K8S_NAMESPACE}" --validate=false --insecure-skip-tls-verify=true
 
                         echo "Updating deployment images with newly built tags..."
-                        kubectl set image deployment/backend-deployment  backend=${BACKEND_IMAGE}  -n ${env.K8S_NAMESPACE} || true
-                        kubectl set image deployment/frontend-deployment frontend=${FRONTEND_IMAGE} -n ${env.K8S_NAMESPACE} || true
+                        kubectl set image deployment/backend-deployment  backend="${BACKEND_IMAGE}"  -n "${env.K8S_NAMESPACE}" --insecure-skip-tls-verify=true || true
+                        kubectl set image deployment/frontend-deployment frontend="${FRONTEND_IMAGE}" -n "${env.K8S_NAMESPACE}" --insecure-skip-tls-verify=true || true
                     """
                 }
             }
@@ -270,8 +296,21 @@ EOF
                 echo "🔍 Checking rollout status for Backend and Frontend..."
                 withCredentials([file(credentialsId: env.KUBE_CRED_ID, variable: 'KUBECONFIG_FILE')]) {
                     sh """
-                        export KUBECONFIG=\${KUBECONFIG_FILE}
                         export PATH=".:\$PATH"
+                        if [ -f ./kubeconfig ]; then
+                            export KUBECONFIG="\$(pwd)/kubeconfig"
+                        else
+                            cp "\${KUBECONFIG_FILE}" ./kubeconfig
+                            chmod 600 ./kubeconfig
+                            export KUBECONFIG="\$(pwd)/kubeconfig"
+                            K8S_INTERNAL_SERVER="https://\${KUBERNETES_SERVICE_HOST:-kubernetes.default.svc}:\${KUBERNETES_SERVICE_PORT:-443}"
+                            CURRENT_CLUSTER=\$(kubectl config view -o jsonpath='{.clusters[0].name}' 2>/dev/null || echo "")
+                            if [ -n "\$CURRENT_CLUSTER" ]; then
+                                kubectl config set-cluster "\$CURRENT_CLUSTER" --server="\${K8S_INTERNAL_SERVER}" --insecure-skip-tls-verify=true --kubeconfig=./kubeconfig || true
+                            fi
+                            sed -i -E "s|([[:space:]]*server: )https://[^[:space:]]+|\1\${K8S_INTERNAL_SERVER}|g" ./kubeconfig || true
+                            sed -i -E "s|[[:space:]]*certificate-authority[-a-z]*:.*|    insecure-skip-tls-verify: true|g" ./kubeconfig || true
+                        fi
 
                         if ! command -v kubectl > /dev/null 2>&1; then
                             if [ -f ./kubectl ]; then
@@ -280,10 +319,14 @@ EOF
                             fi
                         fi
 
-                        kubectl rollout status deployment/backend-deployment  -n ${env.K8S_NAMESPACE} --timeout=120s || true
-                        kubectl rollout status deployment/frontend-deployment -n ${env.K8S_NAMESPACE} --timeout=120s || true
+                        echo "Checking Backend rollout..."
+                        kubectl rollout status deployment/backend-deployment  -n "${env.K8S_NAMESPACE}" --timeout=120s --insecure-skip-tls-verify=true || true
 
-                        kubectl get pods,svc,ingress -n ${env.K8S_NAMESPACE}
+                        echo "Checking Frontend rollout..."
+                        kubectl rollout status deployment/frontend-deployment -n "${env.K8S_NAMESPACE}" --timeout=120s --insecure-skip-tls-verify=true || true
+
+                        echo "Resource status in namespace ${env.K8S_NAMESPACE}:"
+                        kubectl get pods,svc,ingress -n "${env.K8S_NAMESPACE}" --insecure-skip-tls-verify=true
                     """
                 }
             }

@@ -27,6 +27,8 @@ spec:
         app: ajay-traders
         tier: backend
     spec:
+      imagePullSecrets:
+        - name: nexus-docker-secret
       containers:
         - name: backend
           image: nexus.imcc.skilli.in/student-docker/24010988a/backend:latest
@@ -107,6 +109,8 @@ spec:
         app: ajay-traders
         tier: frontend
     spec:
+      imagePullSecrets:
+        - name: nexus-docker-secret
       containers:
         - name: frontend
           image: nexus.imcc.skilli.in/student-docker/24010988a/frontend:latest
