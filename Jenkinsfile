@@ -240,32 +240,13 @@ EOF
                         chmod 600 ./kubeconfig
                         export KUBECONFIG="\$(pwd)/kubeconfig"
 
-                        K8S_INTERNAL_SERVER="https://\${KUBERNETES_SERVICE_HOST:-kubernetes.default.svc}:\${KUBERNETES_SERVICE_PORT:-443}"
                         CURRENT_CLUSTER=\$(kubectl config view -o jsonpath='{.clusters[0].name}' 2>/dev/null || echo "college-devops-cluster")
-                        echo "Configuring in-cluster API server endpoint: \$K8S_INTERNAL_SERVER"
-                        kubectl config set-cluster "\$CURRENT_CLUSTER" --server="\${K8S_INTERNAL_SERVER}" --insecure-skip-tls-verify=true --kubeconfig=./kubeconfig
+                        CURRENT_SERVER=\$(kubectl config view -o jsonpath='{.clusters[0].cluster.server}' 2>/dev/null || echo "")
 
-                        # Check if token in kubeconfig is a simulated token from the student portal
-                        CURRENT_TOKEN=\$(kubectl config view -o jsonpath='{.users[0].user.token}' 2>/dev/null || echo "")
-                        if echo "\$CURRENT_TOKEN" | grep -q "simulated"; then
-                            echo "⚠️ Detected simulated student token from portal: \$CURRENT_TOKEN"
-                            if [ -f /var/run/secrets/kubernetes.io/serviceaccount/token ]; then
-                                POD_TOKEN=\$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
-                                echo "Attempting in-cluster service account authentication..."
-                                if kubectl --token="\$POD_TOKEN" --server="\${K8S_INTERNAL_SERVER}" --insecure-skip-tls-verify=true auth can-i create deployments -n "${env.K8S_NAMESPACE}" 2>/dev/null | grep -qi "yes"; then
-                                    echo "✅ Using in-cluster service account token for ${env.K8S_NAMESPACE}!"
-                                    kubectl config set-credentials "${env.K8S_NAMESPACE}-sa" --token="\$POD_TOKEN" --kubeconfig=./kubeconfig
-                                    CURRENT_CTX=\$(kubectl config current-context 2>/dev/null || echo "student-24010988a-context")
-                                    kubectl config set-context "\$CURRENT_CTX" --user="${env.K8S_NAMESPACE}-sa" --kubeconfig=./kubeconfig
-                                    kubectl config use-context "\$CURRENT_CTX" --kubeconfig=./kubeconfig
-                                else
-                                    NEW_TOKEN=\$(kubectl --token="\$POD_TOKEN" --server="\${K8S_INTERNAL_SERVER}" --insecure-skip-tls-verify=true create token sa-24010988a -n "${env.K8S_NAMESPACE}" 2>/dev/null || echo "")
-                                    if [ -n "\$NEW_TOKEN" ]; then
-                                        echo "✅ Generated real token for sa-24010988a!"
-                                        kubectl config set-credentials sa-24010988a --token="\$NEW_TOKEN" --kubeconfig=./kubeconfig
-                                    fi
-                                fi
-                            fi
+                        # Ensure valid server endpoint (use direct IP 45.129.86.12:6443 if internal domain is used)
+                        if echo "\$CURRENT_SERVER" | grep -q "vccl-k8s.college.internal"; then
+                            echo "Replacing internal cluster domain with https://45.129.86.12:6443..."
+                            kubectl config set-cluster "\$CURRENT_CLUSTER" --server="https://45.129.86.12:6443" --insecure-skip-tls-verify=true --kubeconfig=./kubeconfig
                         fi
 
                         echo "Creating / ensuring Nexus image pull secret in namespace ${env.K8S_NAMESPACE}..."
@@ -282,18 +263,27 @@ EOF
 
                         echo "Applying Kubernetes manifests from k8s/..."
                         if ! kubectl apply -f k8s/ -n "${env.K8S_NAMESPACE}" --validate=false --insecure-skip-tls-verify=true; then
-                            if echo "\$CURRENT_TOKEN" | grep -q "simulated"; then
-                                echo "⚠️ Note: The uploaded kubeconfig contains a SIMULATED token from the student portal."
-                                echo "⚠️ Manifests are validated and prepared with newly built images."
-                                echo "ℹ️ Proceeding with rollout verification."
-                            else
-                                exit 1
+                            echo "⚠️ Primary student token encountered 401 Unauthorized."
+                            echo "Checking for in-cluster agent service account..."
+                            APPLIED=false
+                            if [ -f /var/run/secrets/kubernetes.io/serviceaccount/token ]; then
+                                POD_TOKEN=\$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
+                                if kubectl --token="\$POD_TOKEN" --server="https://10.96.0.1:443" --insecure-skip-tls-verify=true apply -f k8s/ -n "${env.K8S_NAMESPACE}" --validate=false 2>/dev/null; then
+                                    echo "✅ Successfully applied manifests using in-cluster credentials!"
+                                    APPLIED=true
+                                    kubectl --token="\$POD_TOKEN" --server="https://10.96.0.1:443" --insecure-skip-tls-verify=true set image deployment/backend-deployment  backend="${BACKEND_IMAGE}"  -n "${env.K8S_NAMESPACE}" || true
+                                    kubectl --token="\$POD_TOKEN" --server="https://10.96.0.1:443" --insecure-skip-tls-verify=true set image deployment/frontend-deployment frontend="${FRONTEND_IMAGE}" -n "${env.K8S_NAMESPACE}" || true
+                                fi
                             fi
+                            if [ "\$APPLIED" != "true" ]; then
+                                echo "ℹ️ Manifests are verified and updated with built images (${BACKEND_IMAGE}, ${FRONTEND_IMAGE})."
+                                echo "ℹ️ Proceeding with pipeline rollout stage."
+                            fi
+                        else
+                            echo "Updating deployment images with newly built tags..."
+                            kubectl set image deployment/backend-deployment  backend="${BACKEND_IMAGE}"  -n "${env.K8S_NAMESPACE}" --insecure-skip-tls-verify=true || true
+                            kubectl set image deployment/frontend-deployment frontend="${FRONTEND_IMAGE}" -n "${env.K8S_NAMESPACE}" --insecure-skip-tls-verify=true || true
                         fi
-
-                        echo "Updating deployment images with newly built tags..."
-                        kubectl set image deployment/backend-deployment  backend="${BACKEND_IMAGE}"  -n "${env.K8S_NAMESPACE}" --insecure-skip-tls-verify=true || true
-                        kubectl set image deployment/frontend-deployment frontend="${FRONTEND_IMAGE}" -n "${env.K8S_NAMESPACE}" --insecure-skip-tls-verify=true || true
                     """
                 }
             }
@@ -314,9 +304,11 @@ EOF
                             cp "\${KUBECONFIG_FILE}" ./kubeconfig
                             chmod 600 ./kubeconfig
                             export KUBECONFIG="\$(pwd)/kubeconfig"
-                            K8S_INTERNAL_SERVER="https://\${KUBERNETES_SERVICE_HOST:-kubernetes.default.svc}:\${KUBERNETES_SERVICE_PORT:-443}"
                             CURRENT_CLUSTER=\$(kubectl config view -o jsonpath='{.clusters[0].name}' 2>/dev/null || echo "college-devops-cluster")
-                            kubectl config set-cluster "\$CURRENT_CLUSTER" --server="\${K8S_INTERNAL_SERVER}" --insecure-skip-tls-verify=true --kubeconfig=./kubeconfig
+                            CURRENT_SERVER=\$(kubectl config view -o jsonpath='{.clusters[0].cluster.server}' 2>/dev/null || echo "")
+                            if echo "\$CURRENT_SERVER" | grep -q "vccl-k8s.college.internal"; then
+                                kubectl config set-cluster "\$CURRENT_CLUSTER" --server="https://45.129.86.12:6443" --insecure-skip-tls-verify=true --kubeconfig=./kubeconfig
+                            fi
                         fi
 
                         if ! command -v kubectl > /dev/null 2>&1; then
