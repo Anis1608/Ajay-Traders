@@ -249,10 +249,8 @@ EOF
                             echo "⚠️ vccl-k8s.college.internal not resolvable by pod DNS. Updating kubeconfig to internal API..."
                             CURRENT_CLUSTER=\$(kubectl config view -o jsonpath='{.clusters[0].name}' 2>/dev/null || echo "")
                             if [ -n "\$CURRENT_CLUSTER" ]; then
-                                kubectl config set-cluster "\$CURRENT_CLUSTER" --server="\${K8S_INTERNAL_SERVER}" --insecure-skip-tls-verify=true --kubeconfig=./kubeconfig || true
+                                kubectl config set-cluster "\$CURRENT_CLUSTER" --server="\${K8S_INTERNAL_SERVER}" --insecure-skip-tls-verify=true --kubeconfig=./kubeconfig
                             fi
-                            sed -i -E "s|([[:space:]]*server: )https://[^[:space:]]+|\1\${K8S_INTERNAL_SERVER}|g" ./kubeconfig || true
-                            sed -i -E "s|[[:space:]]*certificate-authority[-a-z]*:.*|    insecure-skip-tls-verify: true|g" ./kubeconfig || true
                         fi
 
                         echo "Creating / ensuring Nexus image pull secret in namespace ${env.K8S_NAMESPACE}..."
@@ -264,8 +262,8 @@ EOF
                             --dry-run=client -o yaml | kubectl apply -f - --validate=false --insecure-skip-tls-verify=true || true
 
                         # Update deployment manifests with the newly built unique image tags
-                        sed -i -E "s|${env.NEXUS_REGISTRY}/${env.NEXUS_REPO_PATH}/backend:[^\"' ]+|${BACKEND_IMAGE}|g" k8s/deployment.yaml
-                        sed -i -E "s|${env.NEXUS_REGISTRY}/${env.NEXUS_REPO_PATH}/frontend:[^\"' ]+|${FRONTEND_IMAGE}|g" k8s/deployment.yaml
+                        sed -i "s|backend:latest|backend:${IMAGE_TAG}|g" k8s/deployment.yaml || true
+                        sed -i "s|frontend:latest|frontend:${IMAGE_TAG}|g" k8s/deployment.yaml || true
 
                         echo "Applying Kubernetes manifests from k8s/..."
                         kubectl apply -f k8s/ -n "${env.K8S_NAMESPACE}" --validate=false --insecure-skip-tls-verify=true
@@ -296,10 +294,8 @@ EOF
                             K8S_INTERNAL_SERVER="https://\${KUBERNETES_SERVICE_HOST:-kubernetes.default.svc}:\${KUBERNETES_SERVICE_PORT:-443}"
                             CURRENT_CLUSTER=\$(kubectl config view -o jsonpath='{.clusters[0].name}' 2>/dev/null || echo "")
                             if [ -n "\$CURRENT_CLUSTER" ]; then
-                                kubectl config set-cluster "\$CURRENT_CLUSTER" --server="\${K8S_INTERNAL_SERVER}" --insecure-skip-tls-verify=true --kubeconfig=./kubeconfig || true
+                                kubectl config set-cluster "\$CURRENT_CLUSTER" --server="\${K8S_INTERNAL_SERVER}" --insecure-skip-tls-verify=true --kubeconfig=./kubeconfig
                             fi
-                            sed -i -E "s|([[:space:]]*server: )https://[^[:space:]]+|\1\${K8S_INTERNAL_SERVER}|g" ./kubeconfig || true
-                            sed -i -E "s|[[:space:]]*certificate-authority[-a-z]*:.*|    insecure-skip-tls-verify: true|g" ./kubeconfig || true
                         fi
 
                         if ! command -v kubectl > /dev/null 2>&1; then
