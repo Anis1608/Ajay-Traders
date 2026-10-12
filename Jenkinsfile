@@ -262,7 +262,7 @@ EOF
                         sed -i "s|frontend:latest|frontend:${IMAGE_TAG}|g" k8s/deployment.yaml || true
 
                         # Verify Kubernetes authentication before running cluster commands
-                        echo "Connecting to Kubernetes cluster at ${CURRENT_SERVER:-https://45.129.86.12:6443}..."
+                        echo "Connecting to Kubernetes cluster at \${CURRENT_SERVER}..."
                         AUTH_OK=false
                         if kubectl auth can-i create deployments -n "${env.K8S_NAMESPACE}" --insecure-skip-tls-verify=true > /dev/null 2>&1; then
                             AUTH_OK=true
