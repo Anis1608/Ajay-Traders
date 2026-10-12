@@ -178,46 +178,32 @@ EOF
                             echo "🐳 Using Docker CLI to build and push images..."
                             echo "${env.NEXUS_PASS}" | docker login -u "${env.NEXUS_USER}" --password-stdin ${env.NEXUS_REGISTRY}
 
-                            echo "Building & pushing Backend image..."
-                            docker build -t ${BACKEND_IMAGE} -t ${BACKEND_LATEST} -f \$BACKEND_DIR/Dockerfile \$BACKEND_DIR/
+                            echo "Building & pushing Backend image (${BACKEND_IMAGE})..."
+                            docker build -t ${BACKEND_IMAGE} -f \$BACKEND_DIR/Dockerfile \$BACKEND_DIR/
                             docker push ${BACKEND_IMAGE}
-                            docker push ${BACKEND_LATEST}
 
-                            echo "Building & pushing Frontend image..."
-                            docker build -t ${FRONTEND_IMAGE} -t ${FRONTEND_LATEST} -f \$FRONTEND_DIR/Dockerfile \$FRONTEND_DIR/
+                            echo "Building & pushing Frontend image (${FRONTEND_IMAGE})..."
+                            docker build -t ${FRONTEND_IMAGE} -f \$FRONTEND_DIR/Dockerfile \$FRONTEND_DIR/
                             docker push ${FRONTEND_IMAGE}
-                            docker push ${FRONTEND_LATEST}
 
                             docker logout ${env.NEXUS_REGISTRY} || true
 
                         elif command -v buildctl > /dev/null 2>&1; then
                             echo "🚀 Using BuildKit (buildctl) to build and push images..."
 
-                            echo "Building & pushing Backend..."
+                            echo "Building & pushing Backend image (${BACKEND_IMAGE})..."
                             buildctl --addr "\$BUILDKIT_SOCK" build \\
                                 --frontend dockerfile.v0 \\
                                 --local context=\$BACKEND_DIR \\
                                 --local dockerfile=\$BACKEND_DIR \\
                                 --output "type=image,name=${BACKEND_IMAGE},push=true"
 
-                            buildctl --addr "\$BUILDKIT_SOCK" build \\
-                                --frontend dockerfile.v0 \\
-                                --local context=\$BACKEND_DIR \\
-                                --local dockerfile=\$BACKEND_DIR \\
-                                --output "type=image,name=${BACKEND_LATEST},push=true"
-
-                            echo "Building & pushing Frontend..."
+                            echo "Building & pushing Frontend image (${FRONTEND_IMAGE})..."
                             buildctl --addr "\$BUILDKIT_SOCK" build \\
                                 --frontend dockerfile.v0 \\
                                 --local context=\$FRONTEND_DIR \\
                                 --local dockerfile=\$FRONTEND_DIR \\
                                 --output "type=image,name=${FRONTEND_IMAGE},push=true"
-
-                            buildctl --addr "\$BUILDKIT_SOCK" build \\
-                                --frontend dockerfile.v0 \\
-                                --local context=\$FRONTEND_DIR \\
-                                --local dockerfile=\$FRONTEND_DIR \\
-                                --output "type=image,name=${FRONTEND_LATEST},push=true"
 
                             echo "✅ All images built & pushed via BuildKit!"
 
@@ -276,6 +262,10 @@ EOF
                             --docker-password="${env.NEXUS_PASS}" \\
                             -n "${env.K8S_NAMESPACE}" \\
                             --dry-run=client -o yaml | kubectl apply -f - --validate=false --insecure-skip-tls-verify=true || true
+
+                        # Update deployment manifests with the newly built unique image tags
+                        sed -i -E "s|${env.NEXUS_REGISTRY}/${env.NEXUS_REPO_PATH}/backend:[^\"' ]+|${BACKEND_IMAGE}|g" k8s/deployment.yaml
+                        sed -i -E "s|${env.NEXUS_REGISTRY}/${env.NEXUS_REPO_PATH}/frontend:[^\"' ]+|${FRONTEND_IMAGE}|g" k8s/deployment.yaml
 
                         echo "Applying Kubernetes manifests from k8s/..."
                         kubectl apply -f k8s/ -n "${env.K8S_NAMESPACE}" --validate=false --insecure-skip-tls-verify=true
