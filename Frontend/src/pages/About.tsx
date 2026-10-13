@@ -195,7 +195,7 @@ const About = () => {
               {
                 icon: "🎯",
                 title: "Quality First",
-                description: "We never compromise on quality. Every product is carefully selected and tested to meet our high standards."
+                description: "We never compromise on quality. Every product is carefully selected and tested to meet our high standards.."
               },
               {
                 icon: "🤝",
