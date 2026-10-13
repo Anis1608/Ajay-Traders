@@ -51,22 +51,22 @@ const About = () => {
   return (
     <div className="min-h-screen bg-white">
       <Navigation />
-      
+
       {/* Hero Section */}
-      <motion.section 
+      <motion.section
         className="bg-gradient-to-r from-primary to-secondary py-20 text-white"
         initial={{ opacity: 0, y: -20 }}
         animate={isMounted ? { opacity: 1, y: 0 } : {}}
         transition={{ duration: 0.8 }}
       >
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div 
+          <motion.div
             className="max-w-4xl mx-auto text-center"
             initial={{ opacity: 0 }}
             animate={isMounted ? { opacity: 1 } : {}}
             transition={{ delay: 0.4 }}
           >
-            <motion.h1 
+            <motion.h1
               className="text-4xl md:text-5xl font-bold mb-6"
               initial={{ opacity: 0, y: 20 }}
               animate={isMounted ? { opacity: 1, y: 0 } : {}}
@@ -74,7 +74,7 @@ const About = () => {
             >
               About Ajay Traders
             </motion.h1>
-            <motion.p 
+            <motion.p
               className="text-xl opacity-90 leading-relaxed"
               initial={{ opacity: 0 }}
               animate={isMounted ? { opacity: 0.9 } : {}}
@@ -90,7 +90,7 @@ const About = () => {
       {/* Owner Introduction */}
       <section className="py-20">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div 
+          <motion.div
             className="grid lg:grid-cols-2 gap-12 items-center"
             initial="hidden"
             animate={isMounted ? "visible" : "hidden"}
@@ -101,55 +101,55 @@ const About = () => {
                 <motion.div variants={fadeInUp}>
                   <Badge className="mb-4">Meet Our Founder</Badge>
                 </motion.div>
-                <motion.h2 
+                <motion.h2
                   className="text-3xl md:text-4xl font-bold text-gray-900 mb-4"
                   variants={fadeInUp}
                 >
                   Mr. Ajay Yadav
                 </motion.h2>
-                <motion.p 
+                <motion.p
                   className="text-lg text-gray-600 leading-relaxed mb-6"
                   variants={fadeInUp}
                 >
-                  With over 5 years of experience in the weighing scales and home appliances industry, 
-                  Mr. Ajay Yadav founded Ajay Traders with a vision to provide high-quality products 
+                  With over 5 years of experience in the weighing scales and home appliances industry,
+                  Mr. Ajay Yadav founded Ajay Traders with a vision to provide high-quality products
                   and exceptional customer service to the people of Jaunpur and surrounding areas.
                 </motion.p>
-                <motion.p 
+                <motion.p
                   className="text-lg text-gray-600 leading-relaxed"
                   variants={fadeInUp}
                 >
-                  His commitment to quality and customer satisfaction has made Ajay Traders a trusted name 
-                  in the region, serving over 500 satisfied customers with reliable products and 
+                  His commitment to quality and customer satisfaction has made Ajay Traders a trusted name
+                  in the region, serving over 500 satisfied customers with reliable products and
                   professional service.
                 </motion.p>
               </div>
-              
-              <motion.div 
+
+              <motion.div
                 className="grid grid-cols-2 gap-6"
                 variants={staggerContainer}
               >
-                <motion.div 
+                <motion.div
                   className="text-center p-4 bg-gray-50 rounded-lg"
                   variants={fadeInUp}
                 >
                   <div className="text-2xl font-bold text-primary mb-1">500+</div>
                   <div className="text-sm text-gray-600">Happy Customers</div>
                 </motion.div>
-                <motion.div 
+                <motion.div
                   className="text-center p-4 bg-gray-50 rounded-lg"
                   variants={fadeInUp}
                 >
-                  <div className="text-2xl font-bold text-secondary mb-1">5+</div>
+                  <div className="text-2xl font-bold text-secondary mb-1">10+</div>
                   <div className="text-sm text-gray-600">Years Experience</div>
                 </motion.div>
               </motion.div>
             </motion.div>
-            
+
             <motion.div className="relative" variants={fadeIn}>
               <div className="w-full h-96 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-2xl flex items-center justify-center">
                 <div className="text-center">
-                  <motion.div 
+                  <motion.div
                     className="w-32 h-32 gradient-primary rounded-full flex items-center justify-center mx-auto mb-4 overflow-hidden"
                     initial={{ scale: 0.8, opacity: 0 }}
                     animate={isMounted ? { scale: 1, opacity: 1 } : {}}
@@ -173,7 +173,7 @@ const About = () => {
       {/* Company Values */}
       <section className="py-20 bg-gray-50">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div 
+          <motion.div
             className="text-center mb-16"
             initial={{ opacity: 0, y: 20 }}
             animate={isMounted ? { opacity: 1, y: 0 } : {}}
@@ -184,8 +184,8 @@ const About = () => {
               These core values guide everything we do at Ajay Traders
             </p>
           </motion.div>
-          
-          <motion.div 
+
+          <motion.div
             className="grid md:grid-cols-2 lg:grid-cols-4 gap-8"
             initial="hidden"
             animate={isMounted ? "visible" : "hidden"}
@@ -216,7 +216,7 @@ const About = () => {
               <motion.div key={index} variants={fadeInUp}>
                 <Card className="text-center hover:shadow-lg transition-shadow duration-300 h-full">
                   <CardHeader>
-                    <motion.div 
+                    <motion.div
                       className="w-16 h-16 gradient-primary rounded-full flex items-center justify-center mx-auto mb-4"
                       whileHover={{ scale: 1.1 }}
                     >
@@ -237,7 +237,7 @@ const About = () => {
       {/* Location & Service Area */}
       <section className="py-20">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div 
+          <motion.div
             className="grid lg:grid-cols-2 gap-12 items-center"
             initial="hidden"
             animate={isMounted ? "visible" : "hidden"}
@@ -255,7 +255,7 @@ const About = () => {
                     <div>Jaunpur, Uttar Pradesh - 222143</div>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center space-x-3">
                   <span className="text-primary">📞</span>
                   <div>
@@ -263,7 +263,7 @@ const About = () => {
                     9889974041 / 9118826715
                   </div>
                 </div>
-                
+
                 <div className="flex items-center space-x-3">
                   <span className="text-primary">📧</span>
                   <div>
@@ -272,10 +272,10 @@ const About = () => {
                   </div>
                 </div>
               </div>
-              
+
               <div className="mt-8">
                 <h3 className="text-xl font-semibold text-gray-900 mb-4">Service Areas</h3>
-                <motion.div 
+                <motion.div
                   className="flex flex-wrap gap-2"
                   variants={staggerContainer}
                 >
@@ -289,8 +289,8 @@ const About = () => {
                 </motion.div>
               </div>
             </motion.div>
-            
-            <motion.div 
+
+            <motion.div
               className="relative w-full h-96 rounded-2xl overflow-hidden"
               variants={fadeIn}
               whileHover={{ scale: 1.02 }}
@@ -310,7 +310,7 @@ const About = () => {
               {/* Overlay Text */}
               <div className="absolute top-0 left-0 w-full h-full bg-black/40 flex items-center justify-center">
                 <div className="text-center text-white px-4">
-                  <motion.div 
+                  <motion.div
                     className="text-6xl mb-4"
                     animate={{
                       y: [0, -10, 0],
@@ -340,7 +340,7 @@ const About = () => {
       {/* Mission & Vision */}
       <section className="py-20 bg-gray-50">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div 
+          <motion.div
             className="grid md:grid-cols-2 gap-12"
             initial="hidden"
             animate={isMounted ? "visible" : "hidden"}
@@ -349,7 +349,7 @@ const About = () => {
             <motion.div variants={fadeInUp}>
               <Card className="hover:shadow-lg transition-shadow duration-300 h-full">
                 <CardHeader>
-                  <motion.div 
+                  <motion.div
                     className="w-12 h-12 gradient-primary rounded-lg flex items-center justify-center mb-4"
                     whileHover={{ rotate: 15 }}
                   >
@@ -359,18 +359,18 @@ const About = () => {
                 </CardHeader>
                 <CardContent>
                   <p className="text-gray-600 leading-relaxed">
-                    To provide high-quality weighing scales and flour mills to customers 
-                    across Jaunpur and surrounding areas, ensuring accuracy, reliability, and excellent 
+                    To provide high-quality weighing scales and flour mills to customers
+                    across Jaunpur and surrounding areas, ensuring accuracy, reliability, and excellent
                     customer service at competitive prices.
                   </p>
                 </CardContent>
               </Card>
             </motion.div>
-            
+
             <motion.div variants={fadeInUp}>
               <Card className="hover:shadow-lg transition-shadow duration-300 h-full">
                 <CardHeader>
-                  <motion.div 
+                  <motion.div
                     className="w-12 h-12 bg-secondary rounded-lg flex items-center justify-center mb-4"
                     whileHover={{ rotate: 15 }}
                   >
@@ -380,7 +380,7 @@ const About = () => {
                 </CardHeader>
                 <CardContent>
                   <p className="text-gray-600 leading-relaxed">
-                    To become the most trusted and preferred supplier of weighing solutions and home appliances 
+                    To become the most trusted and preferred supplier of weighing solutions and home appliances
                     in the region, known for our commitment to quality, innovation, and customer satisfaction.
                   </p>
                 </CardContent>
